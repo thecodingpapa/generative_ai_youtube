@@ -1,8 +1,5 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:generative_ai_youtube/message_widget.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
 
 class Chatroom extends StatefulWidget {
   const Chatroom({super.key});
@@ -32,17 +29,6 @@ class _ChatroomState extends State<Chatroom> {
   final ScrollController _scrollController = ScrollController();
   bool isLoading = false;
 
-  late final GenerativeModel _model;
-  late final ChatSession _chatSession;
-
-  static const _apiKey = String.fromEnvironment('API_KEY');
-
-  @override
-  void initState() {
-    super.initState();
-    _model = GenerativeModel(model: "gemini-pro", apiKey: _apiKey);
-    _chatSession = _model.startChat();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,18 +37,14 @@ class _ChatroomState extends State<Chatroom> {
         Expanded(
           child: ListView.builder(
             itemBuilder: ((context, index) {
-              final content = _chatSession.history.toList()[index];
-              final text = content.parts
-                  .whereType<TextPart>()
-                  .map((part) => part.text)
-                  .join();
+              final content = chatbotHistory[index];
 
               return MessageWidget(
-                message: text,
-                isUserMessage: content.role == 'user',
+                message: content,
+                isUserMessage: index%2 == 0,
               );
             }),
-            itemCount: _chatSession.history.length,
+            itemCount: chatbotHistory.length,
             controller: _scrollController,
           ),
         ),
@@ -115,36 +97,19 @@ class _ChatroomState extends State<Chatroom> {
 
     setState(() {
       isLoading = true;
+      chatbotHistory.add(value);
       _textController.clear();
     });
     _scrollToBottom();
 
-    final response = await _chatSession.sendMessage(Content.text(value));
-
-
+    Future.delayed(const Duration(seconds: 1), () {
       setState(() {
         isLoading = false;
+        chatbotHistory.add('I am a chatbot');
       });
 
-    _scrollToBottom();
-    _focusNode.requestFocus();
-
-
-    // setState(() {
-    //   isLoading = true;
-    //   chatbotHistory.add(value);
-    //   _textController.clear();
-    // });
-    // _scrollToBottom();
-
-    // Future.delayed(const Duration(seconds: 1), () {
-    //   setState(() {
-    //     isLoading = false;
-    //     chatbotHistory.add('I am a chatbot');
-    //   });
-
-    //   _scrollToBottom();
-    //   _focusNode.requestFocus();
-    // });
+      _scrollToBottom();
+      _focusNode.requestFocus();
+    });
   }
 }
